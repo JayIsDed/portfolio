@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="en" data-health="healthy">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0a0e0f" />
+  <title>Jason Nguyen — EE / Full-stack / Infrastructure</title>
+  <meta name="description" content="Electrical engineer and full-stack developer. Builder of homelabs, sensor networks, and production tools. W1LSD." />
+  <meta name="author" content="Jason Nguyen" />
+  <link rel="canonical" href="https://jason.pancake3d.com/" />
+
+  <!-- Open Graph / Twitter — social previews -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://jason.pancake3d.com/" />
+  <meta property="og:title" content="Jason Nguyen — EE / Full-stack / Infrastructure" />
+  <meta property="og:description" content="Electrical engineer and full-stack developer. 23-container homelab. ESP32 sensor networks. Live SCADA from a basement aquaponics rig." />
+  <meta property="og:site_name" content="jason.pancake3d.com" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Jason Nguyen — EE / Full-stack / Infrastructure" />
+  <meta name="twitter:description" content="EE + full-stack. Real infrastructure, real numbers, live process data from my basement." />
+
+  <link rel="preconnect" href="https://rsms.me/" crossorigin />
+  <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
+  <link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%2300d4b3'/><text x='16' y='22' font-size='20' font-family='Inter,sans-serif' font-weight='600' text-anchor='middle' fill='%230a0e0f'>j</text></svg>" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+
+  <!-- ─── Hero ───────────────────────────────────────────────────────── -->
+  <header class="hero">
+    <div class="bg-grid" aria-hidden="true"></div>
+    <div class="bg-gradient" aria-hidden="true"></div>
+
+    <nav class="topnav">
+      <a class="logo" href="#top">
+        <span class="logo-dot"></span>
+        <span class="logo-text">jason</span>
+      </a>
+      <ul class="topnav-links">
+        <li><a href="#projects">Projects</a></li>
+        <li><a href="#shelf-live">Live SCADA</a></li>
+        <li><a href="#skills">Skills</a></li>
+        <li><a href="#contact">Contact</a></li>
+      </ul>
+      <div class="ambient-pill" id="ambientPill" title="Live shelf health">
+        <span class="ambient-dot"></span>
+        <span class="ambient-label">live</span>
+      </div>
+    </nav>
+
+    <div class="hero-inner" id="top">
+      <p class="hero-eyebrow">Electrical engineer · Full-stack developer · Infrastructure builder</p>
+      <h1 class="hero-name">Jason Nguyen</h1>
+      <p class="hero-tag">
+        B.S. EE. Builds things that work and deploys them to production —
+        from <em>23-container homelabs</em> to <em>ESP32 sensor networks</em> to <em>industrial ice-plant repairs</em>.
+      </p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="#projects">See the work</a>
+        <a class="btn btn-ghost" href="/resume.pdf">Download resume</a>
+        <a class="btn btn-ghost" href="https://github.com/JayIsDed" rel="noopener" target="_blank">GitHub</a>
+      </div>
+      <div class="hero-meta">
+        <span>Torrington, CT</span>
+        <span aria-hidden="true">·</span>
+        <span>FCC <abbr title="General Class amateur radio operator">W1LSD</abbr></span>
+        <span aria-hidden="true">·</span>
+        <a href="mailto:jason.nguyen32@outlook.com">jason.nguyen32@outlook.com</a>
+      </div>
+    </div>
+
+    <a class="scroll-cue" href="#projects" aria-label="Scroll to projects">
+      <span class="cue-line"></span>
+      <span class="cue-label">work</span>
+    </a>
+  </header>
+
+  <!-- ─── Featured Projects ──────────────────────────────────────────── -->
+  <section class="section section-projects" id="projects">
+    <div class="section-head">
+      <p class="section-eyebrow">01 / Selected work</p>
+      <h2 class="section-title">Things I built that are running right now.</h2>
+      <p class="section-lede">Real infrastructure, real users, real numbers. Not a portfolio of tutorials.</p>
+    </div>
+
+    <div class="project-grid">
+
+      <article class="card card-homelab" data-project="homelab">
+        <div class="card-tag-row">
+          <span class="card-num">P-01</span>
+          <span class="card-badge">In production</span>
+        </div>
+        <h3 class="card-title">Homelab Infrastructure</h3>
+        <p class="card-lede">23-container self-hosted platform on Proxmox VE with ZFS-backed storage.</p>
+        <ul class="card-bullets">
+          <li>Ryzen 9 5950X · 2×8TB ZFS mirror · 9 service stacks</li>
+          <li>Traefik + Cloudflare DNS-01 wildcard TLS</li>
+          <li>Self-hosted Infisical for secrets · Grafana/InfluxDB observability</li>
+        </ul>
+        <div class="card-stack">
+          <span>Proxmox</span><span>Docker</span><span>Traefik</span><span>ZFS</span>
+          <span>Cloudflare</span><span>InfluxDB</span><span>Grafana</span>
+        </div>
+      </article>
+
+      <article class="card card-sigint" data-project="sigint">
+        <div class="card-tag-row">
+          <span class="card-num">P-02</span>
+          <span class="card-badge">Live API · 24 endpoints</span>
+        </div>
+        <h3 class="card-title">SIGINT — Market Intelligence</h3>
+        <p class="card-lede">Real-time market data platform with entity graph analysis.</p>
+        <ul class="card-bullets">
+          <li>25+ automated data-source importers</li>
+          <li>Database optimized: <strong>183 GB → 8.3 GB</strong></li>
+          <li>FTS5 search · entity co-occurrence · daily intel summaries</li>
+        </ul>
+        <div class="card-stack">
+          <span>TypeScript</span><span>Bun</span><span>SQLite</span>
+          <span>FTS5</span><span>REST API</span>
+        </div>
+      </article>
+
+      <article class="card card-rink" data-project="rink">
+        <div class="card-tag-row">
+          <span class="card-num">P-03</span>
+          <span class="card-badge">
+            <a href="https://rink-tracker.pancake3d.com" rel="noopener" target="_blank">rink-tracker.pancake3d.com ↗</a>
+          </span>
+        </div>
+        <h3 class="card-title">Rink Tracker</h3>
+        <p class="card-lede">Production PWA for ice rink surface monitoring — used daily by facility staff.</p>
+        <ul class="card-bullets">
+          <li>Interactive heatmap with point-based measurement tracking</li>
+          <li>Photo pipeline: EXIF rotate → strip metadata → 480 px thumb (Sharp)</li>
+          <li>Role-based auth · admin controls · Docker + Traefik deploy</li>
+        </ul>
+        <div class="card-stack">
+          <span>TypeScript</span><span>Bun</span><span>SQLite</span>
+          <span>Docker</span><span>Sharp</span><span>PWA</span>
+        </div>
+      </article>
+
+      <article class="card card-shelf card-featured" data-project="shelf">
+        <div class="card-tag-row">
+          <span class="card-num">P-04</span>
+          <span class="card-badge badge-live">
+            <span class="live-dot"></span> Live SCADA below ↓
+          </span>
+        </div>
+        <h3 class="card-title">Calibration Shelf — Live Process</h3>
+        <p class="card-lede">
+          Real-time aquaponics monitoring with custom SCADA-style HMI.
+          <strong>This page's ambient color is driven by its current health.</strong>
+        </p>
+        <ul class="card-bullets">
+          <li>Live ESP32 sensor data: temp · humidity · TDS · power · illuminance</li>
+          <li>Custom Canvas2D charts (sparkline · gauge · dual-axis)</li>
+          <li>Three-layer thermal defense with anomaly flag evaluation</li>
+        </ul>
+        <div class="card-stack">
+          <span>Bun</span><span>WebSocket</span><span>Canvas2D</span>
+          <span>PWA</span><span>Home Assistant</span><span>InfluxDB</span>
+        </div>
+        <a class="card-cta" href="#shelf-live">Open live diagram →</a>
+      </article>
+
+      <article class="card card-forge" data-project="forge">
+        <div class="card-tag-row">
+          <span class="card-num">P-05</span>
+          <span class="card-badge">Embedded · OTA</span>
+        </div>
+        <h3 class="card-title">ESP Forge — OTA Firmware Pipeline</h3>
+        <p class="card-lede">Over-the-air firmware deployment across an ESP32 sensor and display fleet.</p>
+        <ul class="card-bullets">
+          <li>MQTTS → Mosquitto → Telegraf → InfluxDB → Grafana</li>
+          <li>SHT31-D + BH1750 sensor nodes · WS2812B LED matrix</li>
+          <li>Remote OTA across multiple boards · firmware build pipeline</li>
+        </ul>
+        <div class="card-stack">
+          <span>ESP32</span><span>ESPHome</span><span>MQTT</span>
+          <span>C++</span><span>InfluxDB</span>
+        </div>
+      </article>
+
+      <article class="card card-honeywell" data-project="honeywell">
+        <div class="card-tag-row">
+          <span class="card-num">P-06</span>
+          <span class="card-badge">Senior Capstone · Honeywell</span>
+        </div>
+        <h3 class="card-title">Regulated NAC Tester</h3>
+        <p class="card-lede">Production-ready test instrument delivered to Honeywell Fire-Lite to replace a legacy proprietary device.</p>
+        <ul class="card-bullets">
+          <li>Custom PCB designed in KiCad · full schematic + assembly docs</li>
+          <li>Designed for manufacturability and field calibration</li>
+          <li>Delivered as production-ready replacement hardware</li>
+        </ul>
+        <div class="card-stack">
+          <span>KiCad</span><span>PCB</span><span>Analog</span><span>Documentation</span>
+        </div>
+      </article>
+
+    </div>
+  </section>
+
+  <!-- ─── Live SCADA section (diagram injected by scada.js) ───────────── -->
+  <section class="section section-shelf" id="shelf-live">
+    <div class="section-head">
+      <p class="section-eyebrow">02 / Live Process</p>
+      <h2 class="section-title">Calibration Shelf — running right now in my basement.</h2>
+      <p class="section-lede">
+        ESP32 sensors → Home Assistant → InfluxDB → this page.
+        <span class="lede-note">Drag the timeline to replay the last 30 days. Flag markers show real incidents.</span>
+      </p>
+    </div>
+
+    <div class="scada-frame">
+      <div class="scada-toolbar">
+        <div class="scada-mode" id="scadaMode">
+          <span class="mode-badge mode-live">LIVE</span>
+          <span class="mode-ts" id="scadaTs">connecting…</span>
+        </div>
+        <div class="scada-vitals-mini" id="scadaVitalsMini">
+          <span class="mini-vital"><span class="mini-label">tank</span><span class="mini-value" data-vital="tank_center">— °F</span></span>
+          <span class="mini-vital"><span class="mini-label">heater</span><span class="mini-value" data-vital="heater_power">— W</span></span>
+          <span class="mini-vital"><span class="mini-label">L0</span><span class="mini-value" data-vital="l0_power">— W</span></span>
+          <span class="mini-vital"><span class="mini-label">ambient</span><span class="mini-value" data-vital="shelf_ambient">— °F</span></span>
+        </div>
+      </div>
+
+      <div class="scada-canvas" id="scadaCanvas">
+        <!-- svg diagram injected by scada.js -->
+      </div>
+      <div class="scada-swipe-hint" aria-hidden="true">
+        <span>← swipe to explore the full diagram →</span>
+      </div>
+
+      <div class="scada-timeline" id="scadaTimeline">
+        <div class="timeline-head">
+          <button class="tl-btn" id="tlPlay" title="Play / pause">▶</button>
+          <select class="tl-speed" id="tlSpeed" title="Playback speed">
+            <option value="3600">1 hr/sec</option>
+            <option value="21600" selected>6 hr/sec</option>
+            <option value="86400">1 day/sec</option>
+          </select>
+          <span class="tl-readout" id="tlReadout">—</span>
+          <button class="tl-btn tl-live" id="tlLive" title="Return to LIVE">LIVE</button>
+        </div>
+        <div class="timeline-track" id="timelineTrack">
+          <div class="track-rail"></div>
+          <div class="track-markers" id="trackMarkers"></div>
+          <input class="track-input" type="range" id="trackInput" min="0" max="1000" value="1000" step="1" aria-label="Replay timeline" />
+          <div class="track-ends">
+            <span id="trackStart">—</span>
+            <span id="trackEnd">now</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── Skills ─────────────────────────────────────────────────────── -->
+  <section class="section section-skills" id="skills">
+    <div class="section-head">
+      <p class="section-eyebrow">03 / Stack</p>
+      <h2 class="section-title">What I reach for.</h2>
+    </div>
+
+    <div class="skills-grid">
+      <div class="skill-cluster">
+        <h4>Languages</h4>
+        <ul><li>TypeScript</li><li>Python</li><li>C / C++</li><li>Bash</li><li>SQL</li><li>Java</li></ul>
+      </div>
+      <div class="skill-cluster">
+        <h4>Infrastructure</h4>
+        <ul><li>Proxmox VE</li><li>Docker</li><li>Traefik</li><li>Cloudflare</li><li>ZFS</li><li>UFW</li></ul>
+      </div>
+      <div class="skill-cluster">
+        <h4>Web / Backend</h4>
+        <ul><li>Bun</li><li>FastAPI</li><li>WebSocket</li><li>REST</li><li>HTML / CSS / JS</li></ul>
+      </div>
+      <div class="skill-cluster">
+        <h4>Databases</h4>
+        <ul><li>SQLite</li><li>InfluxDB</li><li>Qdrant</li></ul>
+      </div>
+      <div class="skill-cluster">
+        <h4>Hardware / EE</h4>
+        <ul><li>ESP32 / ESP32-C6</li><li>KiCad</li><li>SolidWorks · Fusion 360</li><li>Multisim · LabVIEW</li><li>FPGA (Xilinx)</li><li>3D Printing (FDM/SLA)</li></ul>
+      </div>
+      <div class="skill-cluster">
+        <h4>Monitoring</h4>
+        <ul><li>Grafana</li><li>Telegraf</li><li>MQTT</li><li>Home Assistant</li></ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── About + Contact ────────────────────────────────────────────── -->
+  <section class="section section-about" id="about">
+    <div class="about-grid">
+      <div class="about-card">
+        <p class="section-eyebrow">04 / About</p>
+        <h2 class="section-title section-title-md">EE by degree, builder by default.</h2>
+        <p class="about-body">
+          I run a 23-container homelab, maintain an ice rink's industrial systems (refrigeration, electrical, mechanical),
+          and write firmware for ESP32 sensor networks scattered around my house.
+          Based in Connecticut. FCC <abbr title="General Class amateur radio operator">W1LSD</abbr>.
+        </p>
+        <p class="about-body about-body-quiet">
+          The projects above told the story. This is just the human context.
+        </p>
+      </div>
+
+      <div class="contact-card" id="contact">
+        <p class="section-eyebrow">05 / Contact</p>
+        <ul class="contact-list">
+          <li><span class="contact-label">Email</span><a href="mailto:jason.nguyen32@outlook.com">jason.nguyen32@outlook.com</a></li>
+          <li><span class="contact-label">GitHub</span><a href="https://github.com/JayIsDed" rel="noopener" target="_blank">github.com/JayIsDed ↗</a></li>
+          <li><span class="contact-label">Resume</span><a href="/resume.pdf">PDF download</a></li>
+          <li><span class="contact-label">FCC</span><a href="https://www.qrz.com/db/W1LSD" rel="noopener" target="_blank">W1LSD ↗</a></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <footer class="site-foot">
+    <div class="foot-inner">
+      <span class="foot-mark">
+        <span class="logo-dot"></span> jason · CT
+      </span>
+      <span class="foot-live" id="footLive" title="Live shelf health">
+        <span class="ambient-dot"></span>
+        <span id="footLiveLabel">checking…</span>
+      </span>
+      <span class="foot-cr">
+        <em>const plant = alive</em>
+      </span>
+    </div>
+  </footer>
+
+  <script type="module" src="/app.js"></script>
+  <script type="module" src="/scada.js"></script>
+</body>
+</html>

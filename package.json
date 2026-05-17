@@ -1,0 +1,10 @@
+{
+  "name": "jason-portfolio",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun --hot run server.ts",
+    "start": "bun run server.ts"
+  }
+}

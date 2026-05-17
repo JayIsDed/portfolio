@@ -1,0 +1,57 @@
+# Stack-root compose for /opt/stacks/portfolio/docker-compose.yml
+# Stack layout:
+#   /opt/stacks/portfolio/
+#   ├── docker-compose.yml       (this file)
+#   ├── .env                     (HA_TOKEN, etc — chmod 600, gitignored)
+#   ├── data/                    (SQLite WAL, shared between services)
+#   └── src/                     (git deploy target — Dockerfile + code)
+#
+# Redeploy:
+#   git push deploy HEAD:main && \
+#     ssh docker-services "cd /opt/stacks/portfolio && docker compose up -d --build"
+
+services:
+  portfolio:
+    build: ./src
+    image: portfolio:latest
+    container_name: portfolio
+    restart: unless-stopped
+    networks:
+      - proxy-tier
+    volumes:
+      - ./data:/app/data:ro
+    env_file:
+      - .env
+    environment:
+      - PORT=3000
+      - TZ=America/New_York
+      - SHELF_EVENTS_DB=/app/data/shelf-events.db
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.portfolio.rule=Host(`jason.pancake3d.com`)"
+      - "traefik.http.routers.portfolio.entrypoints=websecure"
+      - "traefik.http.routers.portfolio.tls.certresolver=cloudflare"
+      - "traefik.http.services.portfolio.loadbalancer.server.port=3000"
+
+  shelf-logger:
+    image: portfolio:latest
+    container_name: shelf-logger
+    restart: unless-stopped
+    depends_on:
+      - portfolio
+    volumes:
+      - ./data:/app/data
+    env_file:
+      - .env
+    environment:
+      - TZ=America/New_York
+      - SHELF_EVENTS_DB=/app/data/shelf-events.db
+      - LOGGER_POLL_INTERVAL_MS=300000
+    command: ["bun", "run", "logger/logger.ts"]
+    # Image healthcheck pings the web port the logger doesn't bind — disable.
+    healthcheck:
+      disable: true
+
+networks:
+  proxy-tier:
+    external: true
