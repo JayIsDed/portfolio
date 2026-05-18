@@ -4,7 +4,8 @@
 .gitignore
 node_modules
 data
+docs
 *.log
+*.md
 Dockerfile
 .dockerignore
-README.md
