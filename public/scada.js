@@ -781,12 +781,24 @@ const modeBadge = document.querySelector(".mode-badge");
 const markersHost = document.getElementById("trackMarkers");
 
 function setMode(m) {
+  const prev = state.mode;
   state.mode = m;
   if (modeBadge) {
     modeBadge.textContent = m === "replay" ? "REPLAY" : "LIVE";
     modeBadge.classList.toggle("mode-replay", m === "replay");
   }
   if (tlLive) tlLive.classList.toggle("is-active", m === "live");
+  document.documentElement.dataset.mode = m;
+  if (prev !== m) {
+    document.dispatchEvent(new CustomEvent(m === "replay" ? "shelf:replay-enter" : "shelf:replay-exit"));
+  }
+}
+
+// Severity → page-color label. Reused by both live and replay paths.
+function severityLabel(sev) {
+  if ((sev?.critical ?? 0) > 0) return "critical";
+  if ((sev?.warn ?? 0) > 0) return "warn";
+  return "healthy";
 }
 
 function tsFromSliderValue(v) {
@@ -894,7 +906,26 @@ async function handleScrub(force = false) {
   scrubDebounce = setTimeout(async () => {
     try {
       const data = await fetch(`/api/shelf/history?ts=${encodeURIComponent(ts)}`).then((r) => r.json());
-      if (data?.timestamp) renderState(data);
+      if (data?.timestamp) {
+        renderState(data);
+        // Headline flag = highest-severity active flag in the snapshot, else the most recent
+        // event nearest this timestamp. Drives the nav pill caption during replay.
+        const flags = data.flags ?? [];
+        const headline =
+          flags.find((f) => f.level === "critical") ??
+          flags.find((f) => f.level === "warn") ??
+          flags[0] ??
+          null;
+        document.dispatchEvent(new CustomEvent("shelf:replay-snapshot", {
+          detail: {
+            timestamp: data.timestamp,
+            severity: data.severity ?? { critical: 0, warn: 0, info: 0 },
+            level: severityLabel(data.severity),
+            headlineFlag: headline?.flag ?? null,
+            headlineMessage: headline?.message ?? null,
+          },
+        }));
+      }
     } catch (_) { /* keep prev */ }
   }, 80);
 }

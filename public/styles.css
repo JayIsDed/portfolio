@@ -203,6 +203,21 @@ button, select, input {
 }
 .ambient-pill[data-state="warn"]     { border-color: var(--accent); color: var(--ink); }
 .ambient-pill[data-state="critical"] { border-color: var(--accent); color: var(--ink); }
+
+/* Replay-mode pill — half-filled glyph + dashed border, mirroring the SCADA
+   REPLAY badge so the nav, page color, and SCADA toolbar all agree. */
+.ambient-pill.is-replay {
+  border-style: dashed;
+  border-color: var(--accent);
+  background: var(--surface-strong);
+  color: var(--ink);
+}
+.ambient-pill.is-replay .ambient-dot {
+  animation: none;
+  background: linear-gradient(90deg, var(--accent) 0 50%, transparent 50% 100%);
+  box-shadow: 0 0 6px var(--accent-glow);
+}
+
 .ambient-dot {
   width: 7px;
   height: 7px;
