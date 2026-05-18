@@ -440,27 +440,30 @@ const SVG = `
   </g>
 
   <!-- ─────────────────────────────────────────────────────────────────
-       RIGHT COLUMN — Data Pipeline + Control Loops + L0 Sum + Camera
+       RIGHT COLUMN — Data Pipeline (compact) + Control Loops + Camera
+       Pipeline nodes tightened from 66→44 spacing and L0 Sum cell
+       dropped (L0 already shown in the envelope header + mini-vitals
+       strip) so the Camera tile can take the full bottom width.
        ───────────────────────────────────────────────────────────────── -->
   <g transform="translate(800, 140)">
     <rect class="frame" x="0" y="0" width="360" height="660" rx="14"/>
     <text class="lbl" x="16" y="22">Data Pipeline</text>
 
     <!-- Pipeline rail (drawn first; circles overlay) -->
-    <line class="pipe-line" x1="240" y1="50" x2="240" y2="362" />
-    <path class="pipe-flow" d="M 240 50 V 362" />
+    <line class="pipe-line" x1="240" y1="46" x2="240" y2="270" />
+    <path class="pipe-flow" d="M 240 46 V 270" />
 
     <g transform="translate(20, 32)" id="pipeline">
       ${pipelineNode(0,   "ESP32 sensors",    "MQTTS / 8883")}
-      ${pipelineNode(66,  "Mosquitto broker", "LXC 112")}
-      ${pipelineNode(132, "Telegraf",         "MQTT consumer")}
-      ${pipelineNode(198, "InfluxDB",         "homeassistant bucket")}
-      ${pipelineNode(264, "shelf_pulse API",  "this server")}
-      ${pipelineNode(330, "Portfolio render", "you are here")}
+      ${pipelineNode(44,  "Mosquitto broker", "LXC 112")}
+      ${pipelineNode(88,  "Telegraf",         "MQTT consumer")}
+      ${pipelineNode(132, "InfluxDB",         "homeassistant bucket")}
+      ${pipelineNode(176, "shelf_pulse API",  "this server")}
+      ${pipelineNode(220, "Portfolio render", "you are here")}
     </g>
 
     <!-- Control loops -->
-    <g transform="translate(16, 410)">
+    <g transform="translate(16, 295)">
       <text class="lbl" y="0">Control Loops</text>
       <g transform="translate(0, 14)">
         <rect class="frame" x="0" y="0" width="328" height="40" rx="6"/>
@@ -480,25 +483,19 @@ const SVG = `
       </g>
     </g>
 
-    <!-- L0 Sum + Camera footer -->
-    <g transform="translate(16, 568)">
-      <rect class="frame" x="0" y="0" width="158" height="76" rx="6"/>
-      <text class="lbl" x="12" y="20">L0 Sum</text>
-      <text class="v v-lg" x="12" y="50" data-vital="l0_power" data-fmt="watts">— W</text>
-      <text class="v-unit" x="12" y="66">shelf strip total</text>
-    </g>
-    <!-- Camera cell: live snapshot of the Reolink overlooking the shrimp tank.
-         Image is wider than the cell aspect, so xMidYMid+slice crops the
-         Reolink overlay text top/bottom and shows the substrate strip cleanly. -->
-    <g transform="translate(186, 568)">
-      <rect class="frame" x="0" y="0" width="158" height="76" rx="6"/>
-      <text class="lbl" x="12" y="18">Camera · Shrimp Tank</text>
-      <clipPath id="camClip"><rect x="8" y="26" width="142" height="42" rx="3"/></clipPath>
-      <image id="camFeed" x="8" y="26" width="142" height="42"
+    <!-- Camera cell: full-width live snapshot of the Reolink over the
+         shrimp tank. Image area 312×165 is near-perfect 16:9 (camera is
+         640×360 native) so cropping is negligible. -->
+    <g transform="translate(16, 455)">
+      <rect class="frame" x="0" y="0" width="328" height="205" rx="8"/>
+      <text class="lbl" x="14" y="20">Camera · Shrimp Tank</text>
+      <text class="v-unit" x="314" y="20" text-anchor="end">live · 20 s</text>
+      <clipPath id="camClip"><rect x="8" y="30" width="312" height="165" rx="4"/></clipPath>
+      <image id="camFeed" x="8" y="30" width="312" height="165"
              href="/api/shelf/camera"
              preserveAspectRatio="xMidYMid slice"
              clip-path="url(#camClip)"/>
-      <circle cx="144" cy="32" r="2.5" fill="rgba(255,80,80,0.95)">
+      <circle cx="316" cy="40" r="3.5" fill="rgba(255,80,80,0.95)">
         <animate attributeName="opacity" values="1;0.3;1" dur="1.8s" repeatCount="indefinite"/>
       </circle>
     </g>
