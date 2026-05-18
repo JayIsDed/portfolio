@@ -8,7 +8,7 @@
 //   y=381–666  Main Tank (sensor junction strip + viz on left + readouts on right)
 //
 // Wiring rules (envelope-local coords):
-//   - Outlets centered at x=110 (Pump), x=360 (Light), x=600 (Heater)
+//   - Outlets centered at x=120 (Pump), x=360 (Light), x=600 (Heater)
 //   - Pump + Heater drop down in CLEAR corridors that don't cross the grow light bar
 //     (light bar is now x=200..520, leaving x<200 and x>520 clear)
 //   - Pump T-bar at y=360, Heater bend at y=370 — staggered so they don't overlap
@@ -126,6 +126,7 @@ const SVG = `
   </defs>
 
   <!-- ── Top band: External Weather ─────────────────────────────────── -->
+  <!-- Columns at x=16/245/474 fill the 720-wide frame instead of clustering on the left. -->
   <g transform="translate(40,30)">
     <rect class="frame" x="0" y="0" width="720" height="90" rx="8"/>
     <text class="lbl" x="16" y="22">External · Weather</text>
@@ -133,11 +134,11 @@ const SVG = `
       <text class="lbl-tight" y="0">Outside</text>
       <text class="v" y="26" data-vital="outside_temp" data-fmt="temp">— °F</text>
     </g>
-    <g transform="translate(160, 40)">
+    <g transform="translate(245, 40)">
       <text class="lbl-tight" y="0">Humidity</text>
       <text class="v" y="26" data-vital="outside_humidity" data-fmt="pct">— %</text>
     </g>
-    <g transform="translate(304, 40)">
+    <g transform="translate(474, 40)">
       <text class="lbl-tight" y="0">Δ to shelf</text>
       <text class="v" y="26" data-vital="thermal_delta" data-fmt="delta">— °F</text>
       <text class="v-unit" y="42">basement damping</text>
@@ -150,7 +151,8 @@ const SVG = `
     <text class="lbl" x="16" y="22">System</text>
     <text class="v v-lg" x="16" y="58" id="scadaTopTs">— — —</text>
     <text class="v-unit" x="16" y="76">live · 30s poll · 30 d replay window</text>
-    <circle cx="354" cy="22" r="4" fill="var(--accent, #00d4b3)" filter="url(#f-glow)">
+    <!-- Pulse dot mirrored across the panel: 16 left margin → 16 right margin (cx = 380-16). -->
+    <circle cx="364" cy="22" r="4" fill="var(--accent, #00d4b3)" filter="url(#f-glow)">
       <animate attributeName="opacity" values="1;0.4;1" dur="2.4s" repeatCount="indefinite"/>
     </circle>
   </g>
@@ -162,15 +164,16 @@ const SVG = `
     <rect class="frame" x="0" y="0" width="720" height="680" rx="14" stroke-dasharray="4 4"/>
     <text class="lbl" x="16" y="22">Layer 0 · Basement Envelope</text>
 
+    <!-- Header columns spread evenly across the 720-wide envelope (x=16/245/474). -->
     <g transform="translate(16, 44)">
       <text class="lbl-tight" y="0">Ambient</text>
       <text class="v" y="26" data-vital="shelf_ambient" data-fmt="temp">— °F</text>
     </g>
-    <g transform="translate(160, 44)">
+    <g transform="translate(245, 44)">
       <text class="lbl-tight" y="0">L0 Master</text>
       <text class="v" y="26" data-vital="l0_power" data-fmt="watts">— W</text>
     </g>
-    <g transform="translate(304, 44)">
+    <g transform="translate(474, 44)">
       <text class="lbl-tight" y="0">Damping</text>
       <text class="v" y="26">11 : 1</text>
       <text class="v-unit" y="42">passive thermal mass</text>
@@ -178,17 +181,18 @@ const SVG = `
 
     <!-- ── I/O Panel — Tapo P316M Power Strip ─────────────────────────
          Outlet terminals (envelope coords, bottom-center of each pill):
-           Pump:   (110, 211) → drops to T-bar at y=360 in the clear x<200 corridor
+           Pump:   (120, 211) → drops to T-bar at y=360 in the clear x<200 corridor
            Light:  (360, 211) → drops to top of grow light bar (over the bar)
            Heater: (600, 211) → drops to bus at y=370 in the clear x>520 corridor,
                                 bends left to heater body in tank
+         Symmetric layout inside the 700-wide panel: 10px L/R margins, 40px between pills.
     -->
     <g transform="translate(10, 115)">
       <rect class="frame" x="0" y="0" width="700" height="96" rx="10"/>
       <text class="lbl" x="14" y="20">I/O Panel · Tapo P316M Power Strip</text>
 
-      <!-- Pill 1: Pump  (center at power-strip x=100 → envelope x=110) -->
-      <g transform="translate(0, 28)">
+      <!-- Pill 1: Pump  (center at power-strip x=110 → envelope x=120) -->
+      <g transform="translate(10, 28)">
         <rect class="badge-off" x="0" y="0" width="200" height="64" rx="6" id="outlet1Pill"/>
         <text class="lbl-tight" x="12" y="20">Outlet 1 — Pump</text>
         <text class="v" x="12" y="40" data-vital="outlet_1_pump" data-fmt="watts">— W</text>
@@ -217,7 +221,7 @@ const SVG = `
 
     <!-- ── Canopy Zone ────────────────────────────────────────────── -->
     <!-- Light bar shortened to canopy-local x=190..510 (envelope x=200..520)
-         so the Pump (x=110) and Heater (x=600) wire drops have clear corridors. -->
+         so the Pump (x=120) and Heater (x=600) wire drops have clear corridors. -->
     <g transform="translate(10, 231)">
       <rect class="frame" x="0" y="0" width="700" height="120" rx="10"/>
       <text class="lbl" x="14" y="20">Canopy Zone</text>
@@ -369,7 +373,9 @@ const SVG = `
         </g>
       </g>
 
-      <!-- ── Tank readouts column ─────────────────────────────────── -->
+      <!-- ── Tank readouts column ─────────────────────────────────────
+           Spacing: Center °F gets a 60px slot (big v-lg value + sublabel);
+           Substrate / Stratification / TDS each get 56px slots for even rhythm. -->
       <g transform="translate(470, 56)">
         <text class="lbl-tight" y="0">Center °F</text>
         <text class="v v-lg" y="28" data-vital="tank_center" data-fmt="temp" id="tankCenterV">— °F</text>
@@ -379,12 +385,12 @@ const SVG = `
         <text class="lbl-tight" y="0">Substrate °F</text>
         <text class="v" y="24" data-vital="tank_substrate" data-fmt="temp">— °F</text>
       </g>
-      <g transform="translate(470, 158)">
+      <g transform="translate(470, 172)">
         <text class="lbl-tight" y="0">Stratification</text>
         <text class="v" y="24" data-vital="tank_strat" data-fmt="delta">— °F</text>
         <text class="v-unit" y="40">center vs substrate</text>
       </g>
-      <g transform="translate(470, 214)">
+      <g transform="translate(470, 228)">
         <text class="lbl-tight" y="0">TDS</text>
         <text class="v" y="24" data-vital="tds" data-fmt="ppm">— ppm</text>
         <text class="v-unit" y="40">200–400 in-band</text>
@@ -395,7 +401,7 @@ const SVG = `
          All envelope-local. Power strip pills end at y=211 (terminal lead).
 
          Outlet terminals (bottom-center of each pill):
-           Pump:   (110, 211)  → x<200 corridor (clear of light bar at x=200..520)
+           Pump:   (120, 211)  → x<200 corridor (clear of light bar at x=200..520)
            Light:  (360, 211)  → over the light bar, drops straight to bar top
            Heater: (600, 211)  → x>520 corridor (clear of light bar)
 
@@ -413,9 +419,9 @@ const SVG = `
 
     <!-- Pump: outlet drops, T-splits at y=360, both arms plug into diffusers -->
     <g class="route route-pump" id="routePump">
-      <path class="route-base" d="M 110 211 V 360 H 64 V 545 M 110 360 H 416 V 545"/>
-      <path class="route-flow" d="M 110 211 V 360 H 64 V 545 M 110 360 H 416 V 545"/>
-      <circle class="terminal" cx="110" cy="211" r="3"/>
+      <path class="route-base" d="M 120 211 V 360 H 64 V 545 M 120 360 H 416 V 545"/>
+      <path class="route-flow" d="M 120 211 V 360 H 64 V 545 M 120 360 H 416 V 545"/>
+      <circle class="terminal" cx="120" cy="211" r="3"/>
     </g>
 
     <!-- Light: dead-simple vertical drop into the top of the grow light bar -->
