@@ -193,10 +193,16 @@ button, select, input {
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.04em;
   text-transform: lowercase;
-  transition: border-color var(--t-ambient);
+  text-decoration: none;
+  transition: border-color var(--t-ambient), color var(--t-snap), background var(--t-snap);
 }
-.ambient-pill[data-state="warn"] { border-color: var(--accent-deep); }
-.ambient-pill[data-state="critical"] { border-color: var(--accent); }
+.ambient-pill:hover {
+  color: var(--ink);
+  border-color: var(--accent);
+  background: var(--surface-strong);
+}
+.ambient-pill[data-state="warn"]     { border-color: var(--accent); color: var(--ink); }
+.ambient-pill[data-state="critical"] { border-color: var(--accent); color: var(--ink); }
 .ambient-dot {
   width: 7px;
   height: 7px;
