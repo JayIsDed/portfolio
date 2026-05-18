@@ -971,6 +971,11 @@ button, select, input {
   }
   .mini-value { font-size: 13px; }
   .scada-canvas {
+    /* Reset desktop's flex centering — with `justify-content: center` plus an
+       overflowing child, the left portion of the child sits at negative x and
+       is unreachable by scrolling. `display: block` makes the SVG scroll
+       normally from 0 to (svgWidth - viewport). */
+    display: block;
     padding: 16px 0 8px;
     min-height: auto;
     overflow-x: auto;
@@ -980,6 +985,7 @@ button, select, input {
   .scada-canvas svg {
     min-width: 920px;
     width: 920px;
+    display: block;
   }
   .scada-swipe-hint {
     display: flex;
