@@ -8,6 +8,8 @@ const HA_URL = process.env.HA_URL;
 const HA_TOKEN = process.env.HA_TOKEN;
 const POLL_INTERVAL_MS = parseInt(process.env.POLL_INTERVAL_MS ?? "30000");
 const SHELF_EVENTS_DB = process.env.SHELF_EVENTS_DB ?? "./data/shelf-events.db";
+const CAMERA_ENTITY = process.env.CAMERA_ENTITY ?? "camera.calibration_shelf_fluent";
+const CAMERA_CACHE_MS = parseInt(process.env.CAMERA_CACHE_MS ?? "15000");
 const PUBLIC_DIR = join(import.meta.dir, "public");
 
 if (!HA_URL) {
@@ -235,6 +237,41 @@ function withSecurity(res: Response): Response {
   return new Response(res.body, { status: res.status, statusText: res.statusText, headers: h });
 }
 
+// ─── Camera proxy ─────────────────────────────────────────────────────────────
+
+let cameraCache: { ts: number; bytes: Uint8Array; type: string } | null = null;
+
+async function serveCameraSnapshot(): Promise<Response> {
+  const maxAge = Math.floor(CAMERA_CACHE_MS / 1000);
+  if (cameraCache && Date.now() - cameraCache.ts < CAMERA_CACHE_MS) {
+    return new Response(cameraCache.bytes, {
+      headers: { "content-type": cameraCache.type, "cache-control": `public, max-age=${maxAge}` },
+    });
+  }
+  try {
+    const r = await fetch(`${HA_URL}/api/camera_proxy/${CAMERA_ENTITY}`, {
+      headers: { Authorization: `Bearer ${HA_TOKEN}` },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (r.ok) {
+      const type = r.headers.get("content-type") ?? "image/jpeg";
+      const bytes = new Uint8Array(await r.arrayBuffer());
+      cameraCache = { ts: Date.now(), bytes, type };
+      return new Response(bytes, {
+        headers: { "content-type": type, "cache-control": `public, max-age=${maxAge}` },
+      });
+    }
+  } catch {
+    // fall through to stale-or-503
+  }
+  if (cameraCache) {
+    return new Response(cameraCache.bytes, {
+      headers: { "content-type": cameraCache.type, "cache-control": "no-cache", "x-stale": "1" },
+    });
+  }
+  return new Response("camera unavailable", { status: 503 });
+}
+
 // ─── HTTP server ──────────────────────────────────────────────────────────────
 
 const json = (data: unknown, init?: ResponseInit) =>
@@ -316,6 +353,12 @@ async function route(url: URL, path: string): Promise<Response> {
   if (path === "/api/shelf/last-activations") {
     const keys = ["outlet_1_pump", "outlet_3_led", "heater_power"];
     return json(getLastActivations(keys));
+  }
+
+  // ── /api/shelf/camera — JPEG snapshot of the Reolink shrimp-tank camera ──
+  // Proxied so the browser never sees HA_TOKEN. Server-side cache throttles HA.
+  if (path === "/api/shelf/camera") {
+    return serveCameraSnapshot();
   }
 
   // ── /robots.txt + /sitemap.xml ──

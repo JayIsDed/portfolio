@@ -487,12 +487,20 @@ const SVG = `
       <text class="v v-lg" x="12" y="50" data-vital="l0_power" data-fmt="watts">— W</text>
       <text class="v-unit" x="12" y="66">shelf strip total</text>
     </g>
+    <!-- Camera cell: live snapshot of the Reolink overlooking the shrimp tank.
+         Image is wider than the cell aspect, so xMidYMid+slice crops the
+         Reolink overlay text top/bottom and shows the substrate strip cleanly. -->
     <g transform="translate(186, 568)">
       <rect class="frame" x="0" y="0" width="158" height="76" rx="6"/>
-      <text class="lbl" x="12" y="20">Camera</text>
-      <text class="lbl-tight" x="12" y="38">Reolink PTZ</text>
-      <text class="v-unit" x="12" y="56">pan / tilt / day-night</text>
-      <circle cx="142" cy="20" r="4" fill="var(--accent, #00d4b3)" opacity="0.75"/>
+      <text class="lbl" x="12" y="18">Camera · Shrimp Tank</text>
+      <clipPath id="camClip"><rect x="8" y="26" width="142" height="42" rx="3"/></clipPath>
+      <image id="camFeed" x="8" y="26" width="142" height="42"
+             href="/api/shelf/camera"
+             preserveAspectRatio="xMidYMid slice"
+             clip-path="url(#camClip)"/>
+      <circle cx="144" cy="32" r="2.5" fill="rgba(255,80,80,0.95)">
+        <animate attributeName="opacity" values="1;0.3;1" dur="1.8s" repeatCount="indefinite"/>
+      </circle>
     </g>
   </g>
 </svg>
@@ -686,6 +694,21 @@ pollLastActivations();
 setInterval(pollLastActivations, LAST_ACT_REFRESH_MS);
 // Re-render every 30s so the "Nm ago" string stays fresh without a fetch
 setInterval(renderLastActivations, 30_000);
+
+// ── Camera snapshot refresh ──────────────────────────────────────────
+// 20s feels live without hammering HA. Cachebust forces the browser to
+// re-fetch even though the server may serve from its 15s cache. Skips
+// while the tab is hidden so background tabs don't burn data.
+const CAMERA_REFRESH_MS = 20_000;
+function refreshCameraFeed() {
+  if (document.visibilityState !== "visible") return;
+  const img = document.getElementById("camFeed");
+  if (img) img.setAttribute("href", `/api/shelf/camera?t=${Date.now()}`);
+}
+setInterval(refreshCameraFeed, CAMERA_REFRESH_MS);
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") refreshCameraFeed();
+});
 
 // ── Mode (LIVE / REPLAY) state ────────────────────────────────────────
 
