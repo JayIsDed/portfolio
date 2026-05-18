@@ -18,16 +18,28 @@ function applyHealth(severity, mode) {
   html.dataset.health = state;
   if (ambientPill) ambientPill.dataset.state = state;
 
-  const label =
-    state === "critical"
-      ? `${severity.critical} critical`
-      : state === "warn"
-        ? `${severity.warn} warn`
-        : "healthy";
-  const modeText = mode === "stale" ? "stale" : mode === "unknown" ? "offline" : "live";
+  const sevLabel =
+    state === "critical" ? `${severity.critical} critical`
+    : state === "warn"   ? `${severity.warn} warn`
+    : "healthy";
 
-  if (ambientLabel) ambientLabel.textContent = modeText;
-  if (footLabel) footLabel.textContent = `shelf · ${label}`;
+  // Connection state overrides severity in the pill text — if data is stale
+  // or unreachable, the severity count can't be trusted.
+  const pillText =
+    mode === "stale"   ? "stale"
+    : mode === "unknown" ? "offline"
+    : sevLabel;
+
+  const total = severity.critical + severity.warn;
+  const pillTitle =
+    mode === "stale"   ? "Data stale — last good poll was over 90 s ago"
+    : mode === "unknown" ? "HA unreachable — page color is frozen"
+    : state === "healthy" ? "All flags clear · click to see live diagram"
+    : `${sevLabel} flag${total === 1 ? "" : "s"} firing — click for details`;
+
+  if (ambientLabel) ambientLabel.textContent = pillText;
+  if (ambientPill) ambientPill.title = pillTitle;
+  if (footLabel) footLabel.textContent = `shelf · ${sevLabel}`;
 }
 
 async function pollHealth() {
