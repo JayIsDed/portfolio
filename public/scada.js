@@ -440,58 +440,65 @@ const SVG = `
   </g>
 
   <!-- ─────────────────────────────────────────────────────────────────
-       RIGHT COLUMN — Data Pipeline (compact) + Control Loops + Camera
-       Pipeline nodes tightened from 66→44 spacing and L0 Sum cell
-       dropped (L0 already shown in the envelope header + mini-vitals
-       strip) so the Camera tile can take the full bottom width.
+       RIGHT COLUMN — split top half:
+         LEFT  (x=0..176)  Data Pipeline, vertical, in a dashed tile
+         RIGHT (x=184..348) Control Loops, 3 half-width cards
+       Bottom half: full-width Camera.
        ───────────────────────────────────────────────────────────────── -->
   <g transform="translate(800, 140)">
     <rect class="frame" x="0" y="0" width="360" height="660" rx="14"/>
-    <text class="lbl" x="16" y="22">Data Pipeline</text>
 
-    <!-- Pipeline rail (drawn first; circles overlay) -->
-    <line class="pipe-line" x1="240" y1="46" x2="240" y2="270" />
-    <path class="pipe-flow" d="M 240 46 V 270" />
+    <!-- Pipeline label + dashed framing tile (subtle separator, no extra width cost) -->
+    <text class="lbl" x="22" y="22">Data Pipeline</text>
+    <rect x="10" y="40" width="160" height="378" rx="8"
+          fill="rgba(255,255,255,0.018)"
+          stroke="rgba(255,255,255,0.10)" stroke-width="1"
+          stroke-dasharray="2 3"/>
 
-    <g transform="translate(20, 32)" id="pipeline">
-      ${pipelineNode(0,   "ESP32 sensors",    "MQTTS / 8883")}
-      ${pipelineNode(44,  "Mosquitto broker", "LXC 112")}
-      ${pipelineNode(88,  "Telegraf",         "MQTT consumer")}
-      ${pipelineNode(132, "InfluxDB",         "homeassistant bucket")}
-      ${pipelineNode(176, "shelf_pulse API",  "this server")}
-      ${pipelineNode(220, "Portfolio render", "you are here")}
+    <!-- Pipeline rail + nodes — column-local geometry: rail at x=148,
+         circle at x=148, text right-aligned ending at x=136 inside the
+         dashed tile. Original 66 spacing for vertical breathing room. -->
+    <line class="pipe-line" x1="148" y1="66" x2="148" y2="406" />
+    <path class="pipe-flow" d="M 148 66 V 406" />
+
+    <g transform="translate(10, 54)" id="pipeline">
+      ${pipelineNode(0,   "ESP32 sensors",    "MQTTS / 8883",        126, 138)}
+      ${pipelineNode(66,  "Mosquitto broker", "LXC 112",             126, 138)}
+      ${pipelineNode(132, "Telegraf",         "MQTT consumer",       126, 138)}
+      ${pipelineNode(198, "InfluxDB",         "homeassistant bucket",126, 138)}
+      ${pipelineNode(264, "shelf_pulse API",  "this server",         126, 138)}
+      ${pipelineNode(330, "Portfolio render", "you are here",        126, 138)}
     </g>
 
-    <!-- Control loops -->
-    <g transform="translate(16, 295)">
-      <text class="lbl" y="0">Control Loops</text>
-      <g transform="translate(0, 14)">
-        <rect class="frame" x="0" y="0" width="328" height="40" rx="6"/>
-        <text class="lbl-tight" x="12" y="16">Thermal · Inkbird (L1)</text>
-        <text class="v" x="12" y="34" data-vital="tank_center" data-fmt="temp">— °F</text>
-        <text class="v-state" x="316" y="34" text-anchor="end" data-vital="heater_calling" data-fmt="calling">idle</text>
+    <!-- Control Loops — half width (164), stacked under their own label. -->
+    <g transform="translate(184, 0)">
+      <text class="lbl" x="6" y="22">Control Loops</text>
+      <g transform="translate(0, 40)">
+        <rect class="frame" x="0" y="0" width="164" height="60" rx="6"/>
+        <text class="lbl-tight" x="12" y="18">Thermal · Inkbird</text>
+        <text class="v" x="12" y="42" data-vital="tank_center" data-fmt="temp">— °F</text>
+        <text class="v-state" x="152" y="42" text-anchor="end" data-vital="heater_calling" data-fmt="calling">idle</text>
       </g>
-      <g transform="translate(0, 62)">
-        <rect class="frame" x="0" y="0" width="328" height="40" rx="6"/>
-        <text class="lbl-tight" x="12" y="16">Lighting · HA schedule</text>
-        <text class="v" x="12" y="34" data-vital="grow_light_brightness" data-fmt="pct">— %</text>
+      <g transform="translate(0, 116)">
+        <rect class="frame" x="0" y="0" width="164" height="60" rx="6"/>
+        <text class="lbl-tight" x="12" y="18">Lighting · schedule</text>
+        <text class="v" x="12" y="42" data-vital="grow_light_brightness" data-fmt="pct">— %</text>
       </g>
-      <g transform="translate(0, 110)">
-        <rect class="frame" x="0" y="0" width="328" height="40" rx="6"/>
-        <text class="lbl-tight" x="12" y="16">Passive · Layer 0 mass</text>
-        <text class="v" x="12" y="34" data-vital="thermal_delta" data-fmt="delta">— °F</text>
+      <g transform="translate(0, 192)">
+        <rect class="frame" x="0" y="0" width="164" height="60" rx="6"/>
+        <text class="lbl-tight" x="12" y="18">Passive · L0 mass</text>
+        <text class="v" x="12" y="42" data-vital="thermal_delta" data-fmt="delta">— °F</text>
       </g>
     </g>
 
-    <!-- Camera cell: full-width live snapshot of the Reolink over the
-         shrimp tank. Image area 312×165 is near-perfect 16:9 (camera is
-         640×360 native) so cropping is negligible. -->
-    <g transform="translate(16, 455)">
-      <rect class="frame" x="0" y="0" width="328" height="205" rx="8"/>
+    <!-- Camera — full width, image area 312×175 (native 16:9 to the 640×360
+         source so cropping is essentially zero). -->
+    <g transform="translate(16, 430)">
+      <rect class="frame" x="0" y="0" width="328" height="220" rx="8"/>
       <text class="lbl" x="14" y="20">Camera · Shrimp Tank</text>
       <text class="v-unit" x="314" y="20" text-anchor="end">live · 20 s</text>
-      <clipPath id="camClip"><rect x="8" y="30" width="312" height="165" rx="4"/></clipPath>
-      <image id="camFeed" x="8" y="30" width="312" height="165"
+      <clipPath id="camClip"><rect x="8" y="30" width="312" height="175" rx="4"/></clipPath>
+      <image id="camFeed" x="8" y="30" width="312" height="175"
              href="/api/shelf/camera"
              preserveAspectRatio="xMidYMid slice"
              clip-path="url(#camClip)"/>
@@ -503,14 +510,15 @@ const SVG = `
 </svg>
 `;
 
-function pipelineNode(y, name, sub) {
-  // Rail is at absolute x=240; helper g is translated by 20 so local x=220 hits the rail.
+function pipelineNode(y, name, sub, textX = 208, circleX = 220) {
+  // Text right-aligned at textX, circle at circleX. Default coords match the
+  // wide layout; the narrow left-column layout passes smaller values.
   return `
     <g transform="translate(0, ${y})">
-      <text class="lbl-tight" x="208" y="14" text-anchor="end">${name}</text>
-      <text class="v-unit"  x="208" y="30" text-anchor="end">${sub}</text>
-      <circle cx="220" cy="16" r="8" fill="#0a0e0f" stroke="var(--accent, #00d4b3)" stroke-width="1.5"/>
-      <circle cx="220" cy="16" r="3" fill="var(--accent, #00d4b3)" opacity="0.85"/>
+      <text class="lbl-tight" x="${textX}" y="14" text-anchor="end">${name}</text>
+      <text class="v-unit"  x="${textX}" y="30" text-anchor="end">${sub}</text>
+      <circle cx="${circleX}" cy="16" r="8" fill="#0a0e0f" stroke="var(--accent, #00d4b3)" stroke-width="1.5"/>
+      <circle cx="${circleX}" cy="16" r="3" fill="var(--accent, #00d4b3)" opacity="0.85"/>
     </g>
   `;
 }
