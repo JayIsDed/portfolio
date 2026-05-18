@@ -560,6 +560,49 @@ function relTime(iso) {
 
 // ── Live state binding ───────────────────────────────────────────────
 
+const escapeHtml = (s) =>
+  String(s ?? "").replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]),
+  );
+
+function renderStatusAndFlags(snap) {
+  const sev = snap.severity ?? { critical: 0, warn: 0, info: 0 };
+  const flags = snap.flags ?? [];
+
+  // Status pill — labeled source of the page-color shift.
+  const pill = document.getElementById("scadaStatusPill");
+  const pillLabel = document.getElementById("scadaStatusLabel");
+  if (pill && pillLabel) {
+    let status = "healthy";
+    let label = "healthy";
+    if (sev.critical > 0) { status = "critical"; label = `${sev.critical} critical`; }
+    else if (sev.warn > 0) { status = "warn"; label = `${sev.warn} warn`; }
+    else if (sev.info > 0) { status = "healthy"; label = `${sev.info} info`; }
+    pill.dataset.status = status;
+    pillLabel.textContent = label;
+  }
+
+  // Flag chips — visible only when something is firing.
+  const bar = document.getElementById("scadaFlagBar");
+  if (!bar) return;
+  if (flags.length === 0) {
+    bar.hidden = true;
+    bar.innerHTML = "";
+    return;
+  }
+  bar.hidden = false;
+  bar.innerHTML = flags
+    .map(
+      (f) => `
+      <span class="flag-chip" data-level="${escapeHtml(f.level)}" title="${escapeHtml(f.message ?? "")}">
+        <span class="flag-chip-dot"></span>
+        <span class="flag-chip-name">${escapeHtml(f.flag)}</span>
+        <span class="flag-chip-msg">${escapeHtml(f.message ?? "")}</span>
+      </span>`,
+    )
+    .join("");
+}
+
 function renderState(snap) {
   const v = snap.vitals ?? {};
 
@@ -571,6 +614,8 @@ function renderState(snap) {
   const thermalDelta = !isNaN(outsideTemp) && !isNaN(shelfAmbient) ? (shelfAmbient - outsideTemp) : NaN;
 
   const enriched = { ...v, tank_strat: strat, thermal_delta: thermalDelta };
+
+  renderStatusAndFlags(snap);
 
   document.querySelectorAll("[data-vital]").forEach((el) => {
     const key = el.getAttribute("data-vital");

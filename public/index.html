@@ -218,6 +218,10 @@
       <div class="scada-toolbar">
         <div class="scada-mode" id="scadaMode">
           <span class="mode-badge mode-live">LIVE</span>
+          <span class="status-pill" id="scadaStatusPill" data-status="healthy" title="Driven by /api/health — see active flags below if not healthy">
+            <span class="status-dot"></span>
+            <span class="status-label" id="scadaStatusLabel">healthy</span>
+          </span>
           <span class="mode-ts" id="scadaTs">connecting…</span>
         </div>
         <div class="scada-vitals-mini" id="scadaVitalsMini">
@@ -227,6 +231,11 @@
           <span class="mini-vital"><span class="mini-label">ambient</span><span class="mini-value" data-vital="shelf_ambient">— °F</span></span>
         </div>
       </div>
+
+      <!-- Flag bar: hidden when severity is all-zero, slides in when any flag fires.
+           Each chip shows the flag name + the evaluator's message so the page-color
+           shift is self-explaining. -->
+      <div class="scada-flagbar" id="scadaFlagBar" hidden></div>
 
       <div class="scada-canvas" id="scadaCanvas">
         <!-- svg diagram injected by scada.js -->
