@@ -456,12 +456,13 @@ const SVG = `
           stroke-dasharray="2 3"/>
 
     <!-- Pipeline rail + nodes — column-local geometry: rail at x=148,
-         circle at x=148, text right-aligned ending at x=136 inside the
-         dashed tile. Original 66 spacing for vertical breathing room. -->
-    <line class="pipe-line" x1="148" y1="66" x2="148" y2="406" />
-    <path class="pipe-flow" d="M 148 66 V 406" />
+         text right-aligned ending at x=136 inside the dashed tile.
+         Rail centered in the tile: 20px padding top and bottom (tile
+         spans 40..418, rail spans 60..400). -->
+    <line class="pipe-line" x1="148" y1="60" x2="148" y2="400" />
+    <path class="pipe-flow" d="M 148 60 V 400" />
 
-    <g transform="translate(10, 54)" id="pipeline">
+    <g transform="translate(10, 48)" id="pipeline">
       ${pipelineNode(0,   "ESP32 sensors",    "MQTTS / 8883",        126, 138)}
       ${pipelineNode(66,  "Mosquitto broker", "LXC 112",             126, 138)}
       ${pipelineNode(132, "Telegraf",         "MQTT consumer",       126, 138)}
