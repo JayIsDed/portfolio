@@ -423,9 +423,13 @@ console.log(`  shelf events DB: ${SHELF_EVENTS_DB} (${existsSync(SHELF_EVENTS_DB
 console.log(`  poll interval: ${POLL_INTERVAL_MS / 1000}s`);
 
 // The poll runs unawaited on a timer, so catch here: an unhandled rejection
-// would exit the process and take the site down with it.
+// would exit the process and take the site down with it. A failed poll marks
+// the last reading stale, the same as when HA is down.
 function pollSafely(): void {
-  pollHA().catch((e) => console.error("HA poll failed:", e));
+  pollHA().catch((e) => {
+    if (liveState) liveState.mode = "stale";
+    console.error("HA poll failed:", e);
+  });
 }
 
 if (HA_TOKEN) {
