@@ -12,15 +12,19 @@ const TMP = mkdtempSync(join(tmpdir(), "portfolio-test-"));
 const NOW = new Date().toISOString();
 
 // Fake HA. "json" answers like HA; "html" answers 200 with a page, the way a
-// login or proxy page in front of HA would.
-let haMode: "json" | "html" = "json";
+// login or proxy page in front of HA would; "one-html" answers that page for
+// the first entity it is asked about and JSON for the rest.
+let haMode: "json" | "html" | "one-html" = "json";
+let badPath = "";
 const hits = new Map<string, number>();
 const ha = Bun.serve({
   port: 0,
   fetch(req) {
     const path = new URL(req.url).pathname;
     hits.set(path, (hits.get(path) ?? 0) + 1);
-    if (haMode === "html") return new Response("<html>sign in</html>", { headers: { "content-type": "text/html" } });
+    if (haMode === "html" || (haMode === "one-html" && path === (badPath ||= path))) {
+      return new Response("<html>sign in</html>", { headers: { "content-type": "text/html" } });
+    }
     const id = path.split("/").pop();
     return Response.json({ entity_id: id, state: "77.0", attributes: {}, last_changed: NOW, last_updated: NOW });
   },
@@ -38,6 +42,7 @@ afterEach(async () => {
   }
   hits.clear();
   haMode = "json";
+  badPath = "";
 });
 afterAll(() => {
   ha.stop(true);
@@ -49,6 +54,7 @@ async function until(cond: () => boolean | Promise<boolean>, ms = 8000): Promise
   while (!(await cond()) && Date.now() < end) await Bun.sleep(25);
 }
 
+let runs = 0;
 function spawn(script: string, env: Record<string, string>) {
   const proc = Bun.spawn([process.execPath, "run", script], {
     cwd: ROOT,
@@ -59,7 +65,7 @@ function spawn(script: string, env: Record<string, string>) {
       // Set explicitly: these win over anything a local .env would load.
       HA_URL: ha.url.origin,
       HA_TOKEN: "test-token",
-      SHELF_EVENTS_DB: join(TMP, `${script.replace(/\W/g, "_")}.db`),
+      SHELF_EVENTS_DB: join(TMP, `${script.replace(/\W/g, "_")}-${++runs}.db`),
       ...env,
     },
     stdout: "pipe",
@@ -116,6 +122,16 @@ test("logger stays up on a 200 non-JSON HA reply and writes once HA recovers", a
   await until(() => log.text.includes("snap #1") || proc.exitCode !== null);
   expect(proc.exitCode).toBeNull();
   expect(log.text).toContain("snap #1");
+}, 15000);
+
+test("logger skips one non-JSON entity and still writes each poll's snapshot", async () => {
+  haMode = "one-html";
+  const { proc, log } = spawn("logger/logger.ts", { LOGGER_POLL_INTERVAL_MS: "100" });
+  await until(() => /snap #3|poll failed/.test(log.text) || proc.exitCode !== null);
+
+  expect(proc.exitCode).toBeNull();
+  expect(log.text).not.toContain("poll failed");
+  expect(log.text).toContain("snap #3");
 }, 15000);
 
 test("malformed %-escape gets a 400 with the same security headers as any response", async () => {
