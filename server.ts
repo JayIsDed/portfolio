@@ -59,8 +59,11 @@ async function fetchEntity(id: string): Promise<any> {
       signal: AbortSignal.timeout(5000),
     });
     if (!res.ok) return null;
-    return res.json();
-  } catch {
+    // Awaited so a 200 that isn't JSON (a login or proxy page in front of HA)
+    // rejects inside this try instead of past it.
+    return await res.json();
+  } catch (e) {
+    if (e instanceof SyntaxError) console.warn(`HA reply for ${id} was not JSON; skipped`);
     return null;
   }
 }
@@ -390,9 +393,15 @@ console.log(`  HA: ${HA_URL}`);
 console.log(`  shelf events DB: ${SHELF_EVENTS_DB} (${existsSync(SHELF_EVENTS_DB) ? "found" : "missing"})`);
 console.log(`  poll interval: ${POLL_INTERVAL_MS / 1000}s`);
 
+// The poll runs unawaited on a timer, so catch here: an unhandled rejection
+// would exit the process and take the site down with it.
+function pollSafely(): void {
+  pollHA().catch((e) => console.error("HA poll failed:", e));
+}
+
 if (HA_TOKEN) {
-  pollHA();
-  setInterval(pollHA, POLL_INTERVAL_MS);
+  pollSafely();
+  setInterval(pollSafely, POLL_INTERVAL_MS);
 } else {
   console.warn("HA_TOKEN missing — live state disabled");
 }

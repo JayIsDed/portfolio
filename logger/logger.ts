@@ -46,8 +46,11 @@ async function fetchEntity(id: string): Promise<any> {
       signal: AbortSignal.timeout(10000),
     });
     if (!res.ok) return null;
-    return res.json();
-  } catch {
+    // Awaited so a 200 that isn't JSON (a login or proxy page in front of HA)
+    // rejects inside this try instead of past it.
+    return await res.json();
+  } catch (e) {
+    if (e instanceof SyntaxError) console.warn(`HA reply for ${id} was not JSON; skipped`);
     return null;
   }
 }
@@ -130,6 +133,16 @@ console.log(`  HA: ${HA_URL}`);
 console.log(`  poll: ${POLL_MS / 1000}s`);
 console.log(`  entities: ${SHELF_ENTITIES.length}`);
 console.log(`  db: ${process.env.SHELF_EVENTS_DB ?? "./data/shelf-events.db"}`);
+// A throw in one poll is logged and the next poll tries again; left
+// unhandled, it would exit the logger.
+async function pollSafely(db: ReturnType<typeof openDb>): Promise<void> {
+  try {
+    await poll(db);
+  } catch (e) {
+    console.error(`[${new Date().toISOString()}] poll failed:`, e);
+  }
+}
+
 const db = openDb();
-await poll(db);
-setInterval(() => poll(db), POLL_MS);
+await pollSafely(db);
+setInterval(() => pollSafely(db), POLL_MS);
