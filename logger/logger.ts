@@ -114,26 +114,31 @@ async function poll(db: ReturnType<typeof openDb>): Promise<void> {
   const vitals = buildVitals(entities);
   const severity = severityOf(flags);
 
-  const snapId = insertSnapshot(db, { timestamp: now, vitals, flags, severity });
-  const prevFlags = getLastFlagsBeforeCurrent(db, snapId);
-  const { appeared, cleared } = diffFlags(prevFlags, flags);
+  // One transaction per poll: if an event insert fails, the snapshot rolls
+  // back with it, so the next poll diffs against the same previous snapshot
+  // and records the transition then instead of losing it.
+  const { snapId, appeared, cleared } = db.transaction(() => {
+    const snapId = insertSnapshot(db, { timestamp: now, vitals, flags, severity });
+    const { appeared, cleared } = diffFlags(getLastFlagsBeforeCurrent(db, snapId), flags);
+    for (const f of appeared) {
+      const ev: ShelfEvent = { timestamp: now, type: "flag_appeared", flag: f.flag, level: f.level, message: f.message };
+      insertEvent(db, ev, snapId);
+    }
+    for (const f of cleared) {
+      const ev: ShelfEvent = {
+        timestamp: now,
+        type: "flag_cleared",
+        flag: f.flag,
+        level: f.level,
+        resolution_hint: resolutionHint(f, vitals),
+      };
+      insertEvent(db, ev, snapId);
+    }
+    return { snapId, appeared, cleared };
+  })();
 
-  for (const f of appeared) {
-    const ev: ShelfEvent = { timestamp: now, type: "flag_appeared", flag: f.flag, level: f.level, message: f.message };
-    insertEvent(db, ev, snapId);
-    console.log(`[${now}] APPEARED ${f.flag} (${f.level}) — ${f.message}`);
-  }
-  for (const f of cleared) {
-    const ev: ShelfEvent = {
-      timestamp: now,
-      type: "flag_cleared",
-      flag: f.flag,
-      level: f.level,
-      resolution_hint: resolutionHint(f, vitals),
-    };
-    insertEvent(db, ev, snapId);
-    console.log(`[${now}] CLEARED ${f.flag} — ${ev.resolution_hint}`);
-  }
+  for (const f of appeared) console.log(`[${now}] APPEARED ${f.flag} (${f.level}) — ${f.message}`);
+  for (const f of cleared) console.log(`[${now}] CLEARED ${f.flag} — ${resolutionHint(f, vitals)}`);
 
   const summary = flags.length ? flags.map((f) => f.flag).join(", ") : "clean";
   console.log(`[${now}] snap #${snapId} — ${severity.critical}c/${severity.warn}w/${severity.info}i — ${summary}`);

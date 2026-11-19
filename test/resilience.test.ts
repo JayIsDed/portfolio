@@ -3,6 +3,7 @@
 // localhost, no dependencies beyond Bun. Run with `bun test`.
 import { afterAll, afterEach, expect, test } from "bun:test";
 import type { Subprocess } from "bun";
+import { Database } from "bun:sqlite";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { connect } from "node:net";
 import { tmpdir } from "node:os";
@@ -138,6 +139,33 @@ test("logger skips one non-JSON entity and still writes each poll's snapshot", a
   // Three polls with the same one bad entity: one warning line.
   expect(log.text.match(/HA replies were not JSON/g)).toHaveLength(1);
   expect(log.text).toMatch(/\b1 of \d+ HA replies were not JSON/);
+}, 15000);
+
+test("logger writes a poll's snapshot and its events together or not at all", async () => {
+  // HTML first: the logger opens the DB and creates its tables, but writes nothing.
+  haMode = "html";
+  const dbPath = join(TMP, "logger-tx.db");
+  const { proc, log } = spawn("logger/logger.ts", { LOGGER_POLL_INTERVAL_MS: "100", SHELF_EVENTS_DB: dbPath });
+  await until(() => polls() >= 1 || proc.exitCode !== null);
+  const db = new Database(dbPath);
+  db.run("PRAGMA busy_timeout = 5000");
+  db.run("CREATE TRIGGER fail_events BEFORE INSERT ON events BEGIN SELECT RAISE(ABORT, 'events insert failed'); END");
+
+  // Every fake reading is 77, which puts TDS out of range, so the first
+  // snapshot raises a flag and its event insert fails.
+  haMode = "json";
+  await until(() => log.text.includes("poll failed") || proc.exitCode !== null);
+  db.run("DROP TRIGGER fail_events");
+  await until(() => log.text.includes("snap #") || proc.exitCode !== null);
+
+  expect(proc.exitCode).toBeNull();
+  expect(log.text).toContain("poll failed");
+  expect(log.text).toContain("snap #");
+  // Kept separately, the failed poll's snapshot would stay, the next poll
+  // would diff against it, and the flag_appeared marker would never land.
+  const { n } = db.query("SELECT COUNT(*) AS n FROM events WHERE type = 'flag_appeared'").get() as { n: number };
+  db.close();
+  expect(n).toBeGreaterThan(0);
 }, 15000);
 
 // Every response should carry the same five headers as a plain /healthz.
