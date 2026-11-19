@@ -1,6 +1,7 @@
 # Portfolio image — runs either the web server (default) or the shelf logger
 # (override CMD). Single image, two services in compose.
-FROM oven/bun:1.3-alpine
+# Pinned to the patch the smoke ran on (1.3-alpine floated).
+FROM oven/bun:1.4.2-alpine
 
 WORKDIR /app
 
