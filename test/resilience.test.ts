@@ -3,7 +3,7 @@
 // localhost, no dependencies beyond Bun. Run with `bun test`.
 import { afterAll, afterEach, expect, test } from "bun:test";
 import type { Subprocess } from "bun";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { connect } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -185,5 +185,21 @@ test("a malformed or missing Host header gets a 400 with the security headers", 
     expect(bad.status).toBe(400);
     expectSecurityHeaders(ok.headers, bad.headers);
   }
+  expect(proc.exitCode).toBeNull();
+}, 15000);
+
+test("a throw inside a route gets a 500 with the security headers, and the server stays up", async () => {
+  // An empty file opens as a valid SQLite DB with no tables, so the history
+  // query throws inside route().
+  const empty = join(TMP, "empty.db");
+  writeFileSync(empty, "");
+  const { proc, base } = await startServer({ SHELF_EVENTS_DB: empty });
+  const ok = await fetch(`${base}/healthz`);
+  const bad = await fetch(`${base}/api/shelf/history?ts=2026-01-01T00:00:00Z`);
+
+  expect(bad.status).toBe(500);
+  expect(await bad.text()).toBe("Internal error");
+  expectSecurityHeaders(ok.headers, bad.headers);
+  expect((await fetch(`${base}/healthz`)).status).toBe(200);
   expect(proc.exitCode).toBeNull();
 }, 15000);
