@@ -197,7 +197,14 @@ function cacheFor(ext: string): string {
 }
 
 function serveStatic(pathname: string): Response | null {
-  let p = decodeURIComponent(pathname);
+  let p: string;
+  try {
+    p = decodeURIComponent(pathname);
+  } catch {
+    // A malformed %-escape (e.g. /%E0%A4%A) is the client's mistake: 400, and
+    // it goes back through route() so withSecurity still adds the headers.
+    return new Response("Bad request", { status: 400, headers: { "content-type": "text/plain; charset=utf-8" } });
+  }
   if (p === "/" || p === "") p = "/index.html";
   const safe = normalize(join(PUBLIC_DIR, p));
   if (!safe.startsWith(PUBLIC_DIR)) return new Response("Forbidden", { status: 403 });
