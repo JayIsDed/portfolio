@@ -90,7 +90,7 @@ async function startServer(env: Record<string, string>) {
 }
 
 test("server stays up on a 200 non-JSON HA reply and keeps its last good reading", async () => {
-  const { proc, base } = await startServer({});
+  const { proc, log, base } = await startServer({});
   await until(async () => (await fetch(`${base}/api/shelf/state`).catch(() => null))?.status === 200);
   const good = await (await fetch(`${base}/api/shelf/state`)).json();
 
@@ -111,6 +111,8 @@ test("server stays up on a 200 non-JSON HA reply and keeps its last good reading
   const now = await res.json();
   expect(now.mode).toBe("stale");
   expect(now.vitals).toEqual(good.vitals);
+  // Two or more polls of nothing but non-JSON: one warning, not one per entity.
+  expect(log.text.match(/HA replies were not JSON/g)).toHaveLength(1);
 }, 15000);
 
 test("logger stays up on a 200 non-JSON HA reply and writes once HA recovers", async () => {
@@ -133,6 +135,9 @@ test("logger skips one non-JSON entity and still writes each poll's snapshot", a
   expect(proc.exitCode).toBeNull();
   expect(log.text).not.toContain("poll failed");
   expect(log.text).toContain("snap #3");
+  // Three polls with the same one bad entity: one warning line.
+  expect(log.text.match(/HA replies were not JSON/g)).toHaveLength(1);
+  expect(log.text).toMatch(/\b1 of \d+ HA replies were not JSON/);
 }, 15000);
 
 // Every response should carry the same five headers as a plain /healthz.

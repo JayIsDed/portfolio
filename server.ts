@@ -51,7 +51,16 @@ interface LiveState {
 let liveState: LiveState | null = null;
 let lastPollOk = 0;
 
-async function fetchEntity(id: string): Promise<any> {
+// A login page in front of HA would turn every entity of every poll into a
+// warning, so count them per poll and log only when the count changes.
+let notJsonLast = 0;
+function noteNotJson(n: number): void {
+  if (n === notJsonLast) return;
+  notJsonLast = n;
+  console.warn(`${n} of ${SHELF_ENTITIES.length} HA replies were not JSON (logged when this changes)`);
+}
+
+async function fetchEntity(id: string, tally: { notJson: number }): Promise<any> {
   if (!HA_TOKEN) return null;
   try {
     const res = await fetch(`${HA_URL}/api/states/${id}`, {
@@ -63,7 +72,7 @@ async function fetchEntity(id: string): Promise<any> {
     // rejects inside this try instead of past it.
     return await res.json();
   } catch (e) {
-    if (e instanceof SyntaxError) console.warn(`HA reply for ${id} was not JSON; skipped`);
+    if (e instanceof SyntaxError) tally.notJson++;
     return null;
   }
 }
@@ -72,7 +81,9 @@ async function pollHA(): Promise<void> {
   const now = new Date().toISOString();
   const entities: EntityStates = {};
 
-  const results = await Promise.all(SHELF_ENTITIES.map((id) => fetchEntity(id)));
+  const tally = { notJson: 0 };
+  const results = await Promise.all(SHELF_ENTITIES.map((id) => fetchEntity(id, tally)));
+  noteNotJson(tally.notJson);
   for (let i = 0; i < SHELF_ENTITIES.length; i++) {
     if (results[i]) entities[SHELF_ENTITIES[i]] = results[i];
   }
