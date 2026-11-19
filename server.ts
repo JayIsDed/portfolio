@@ -309,7 +309,14 @@ const server = Bun.serve({
   async fetch(req) {
     const url = new URL(req.url);
     const path = url.pathname;
-    const res = await route(url, path);
+    let res: Response;
+    try {
+      res = await route(url, path);
+    } catch (e) {
+      // Without this, a throw skips withSecurity and Bun's bare 500 goes out.
+      console.error(`${req.method} ${path} failed:`, e);
+      res = new Response("Internal error", { status: 500, headers: { "content-type": "text/plain; charset=utf-8" } });
+    }
     return withSecurity(res);
   },
 });
