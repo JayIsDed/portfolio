@@ -4,6 +4,7 @@
 import { afterAll, afterEach, expect, test } from "bun:test";
 import type { Subprocess } from "bun";
 import { mkdtempSync, rmSync } from "node:fs";
+import { connect } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -134,12 +135,8 @@ test("logger skips one non-JSON entity and still writes each poll's snapshot", a
   expect(log.text).toContain("snap #3");
 }, 15000);
 
-test("malformed %-escape gets a 400 with the same security headers as any response", async () => {
-  const { base } = await startServer({});
-  const ok = await fetch(`${base}/healthz`);
-  const bad = await fetch(`${base}/%E0%A4%A`);
-
-  expect(bad.status).toBe(400);
+// Every response should carry the same five headers as a plain /healthz.
+function expectSecurityHeaders(ok: Headers, got: Headers) {
   for (const h of [
     "content-security-policy",
     "strict-transport-security",
@@ -147,7 +144,46 @@ test("malformed %-escape gets a 400 with the same security headers as any respon
     "referrer-policy",
     "permissions-policy",
   ]) {
-    expect(ok.headers.get(h)).toBeTruthy();
-    expect(bad.headers.get(h)).toBe(ok.headers.get(h));
+    expect(ok.get(h)).toBeTruthy();
+    expect(got.get(h)).toBe(ok.get(h));
   }
+}
+
+// fetch() won't send a malformed Host header, so write the request by hand.
+async function rawGet(base: string, head: string): Promise<{ status: number; headers: Headers }> {
+  const { hostname, port } = new URL(base);
+  const text = await new Promise<string>((resolve, reject) => {
+    let out = "";
+    const sock = connect(Number(port), hostname, () => sock.write(`${head}\r\n\r\n`));
+    sock.on("data", (d) => (out += d));
+    sock.on("close", () => resolve(out));
+    sock.on("error", reject);
+  });
+  const [status = "", ...lines] = text.split("\r\n\r\n")[0].split("\r\n");
+  const headers = new Headers();
+  for (const line of lines) {
+    const i = line.indexOf(":");
+    headers.append(line.slice(0, i).trim(), line.slice(i + 1).trim());
+  }
+  return { status: Number(status.split(" ")[1]), headers };
+}
+
+test("malformed %-escape gets a 400 with the same security headers as any response", async () => {
+  const { base } = await startServer({});
+  const ok = await fetch(`${base}/healthz`);
+  const bad = await fetch(`${base}/%E0%A4%A`);
+
+  expect(bad.status).toBe(400);
+  expectSecurityHeaders(ok.headers, bad.headers);
+}, 15000);
+
+test("a malformed or missing Host header gets a 400 with the security headers", async () => {
+  const { proc, base } = await startServer({});
+  const ok = await fetch(`${base}/healthz`);
+  for (const head of ["GET / HTTP/1.1\r\nHost: a b\r\nConnection: close", "GET / HTTP/1.0"]) {
+    const bad = await rawGet(base, head);
+    expect(bad.status).toBe(400);
+    expectSecurityHeaders(ok.headers, bad.headers);
+  }
+  expect(proc.exitCode).toBeNull();
 }, 15000);

@@ -196,6 +196,9 @@ function cacheFor(ext: string): string {
   return "public, max-age=300";
 }
 
+const badRequest = () =>
+  new Response("Bad request", { status: 400, headers: { "content-type": "text/plain; charset=utf-8" } });
+
 function serveStatic(pathname: string): Response | null {
   let p: string;
   try {
@@ -203,7 +206,7 @@ function serveStatic(pathname: string): Response | null {
   } catch {
     // A malformed %-escape (e.g. /%E0%A4%A) is the client's mistake: 400, and
     // it goes back through route() so withSecurity still adds the headers.
-    return new Response("Bad request", { status: 400, headers: { "content-type": "text/plain; charset=utf-8" } });
+    return badRequest();
   }
   if (p === "/" || p === "") p = "/index.html";
   const safe = normalize(join(PUBLIC_DIR, p));
@@ -307,14 +310,15 @@ const SITEMAP_XML = `<?xml version="1.0" encoding="UTF-8"?>
 const server = Bun.serve({
   port: PORT,
   async fetch(req) {
-    const url = new URL(req.url);
-    const path = url.pathname;
     let res: Response;
     try {
-      res = await route(url, path);
+      // req.url doesn't parse when the Host header is malformed or missing
+      // (Host: a b, HTTP/1.0 with no Host): the client's mistake, so 400.
+      const url = URL.parse(req.url);
+      res = url ? await route(url, url.pathname) : badRequest();
     } catch (e) {
       // Without this, a throw skips withSecurity and Bun's bare 500 goes out.
-      console.error(`${req.method} ${path} failed:`, e);
+      console.error(`${req.method} ${req.url} failed:`, e);
       res = new Response("Internal error", { status: 500, headers: { "content-type": "text/plain; charset=utf-8" } });
     }
     return withSecurity(res);
