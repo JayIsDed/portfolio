@@ -39,22 +39,36 @@ const SHELF_ENTITIES = [
   "light.grow_white",
 ];
 
-async function fetchEntity(id: string): Promise<any> {
+// A login page in front of HA would turn every entity of every poll into a
+// warning, so count them per poll and log only when the count changes.
+let notJsonLast = 0;
+function noteNotJson(n: number): void {
+  if (n === notJsonLast) return;
+  notJsonLast = n;
+  console.warn(`${n} of ${SHELF_ENTITIES.length} HA replies were not JSON (logged when this changes)`);
+}
+
+async function fetchEntity(id: string, tally: { notJson: number }): Promise<any> {
   try {
     const res = await fetch(`${HA_URL}/api/states/${id}`, {
       headers: { Authorization: `Bearer ${HA_TOKEN}` },
       signal: AbortSignal.timeout(10000),
     });
     if (!res.ok) return null;
-    return res.json();
-  } catch {
+    // Awaited so a 200 that isn't JSON (a login or proxy page in front of HA)
+    // rejects inside this try instead of past it.
+    return await res.json();
+  } catch (e) {
+    if (e instanceof SyntaxError) tally.notJson++;
     return null;
   }
 }
 
 async function fetchAllEntities(): Promise<EntityStates> {
   const out: EntityStates = {};
-  const results = await Promise.all(SHELF_ENTITIES.map((id) => fetchEntity(id)));
+  const tally = { notJson: 0 };
+  const results = await Promise.all(SHELF_ENTITIES.map((id) => fetchEntity(id, tally)));
+  noteNotJson(tally.notJson);
   for (let i = 0; i < SHELF_ENTITIES.length; i++) {
     if (results[i]) out[SHELF_ENTITIES[i]] = results[i];
   }
@@ -100,26 +114,31 @@ async function poll(db: ReturnType<typeof openDb>): Promise<void> {
   const vitals = buildVitals(entities);
   const severity = severityOf(flags);
 
-  const snapId = insertSnapshot(db, { timestamp: now, vitals, flags, severity });
-  const prevFlags = getLastFlagsBeforeCurrent(db, snapId);
-  const { appeared, cleared } = diffFlags(prevFlags, flags);
+  // One transaction per poll: if an event insert fails, the snapshot rolls
+  // back with it, so the next poll diffs against the same previous snapshot
+  // and records the transition then instead of losing it.
+  const { snapId, appeared, cleared } = db.transaction(() => {
+    const snapId = insertSnapshot(db, { timestamp: now, vitals, flags, severity });
+    const { appeared, cleared } = diffFlags(getLastFlagsBeforeCurrent(db, snapId), flags);
+    for (const f of appeared) {
+      const ev: ShelfEvent = { timestamp: now, type: "flag_appeared", flag: f.flag, level: f.level, message: f.message };
+      insertEvent(db, ev, snapId);
+    }
+    for (const f of cleared) {
+      const ev: ShelfEvent = {
+        timestamp: now,
+        type: "flag_cleared",
+        flag: f.flag,
+        level: f.level,
+        resolution_hint: resolutionHint(f, vitals),
+      };
+      insertEvent(db, ev, snapId);
+    }
+    return { snapId, appeared, cleared };
+  })();
 
-  for (const f of appeared) {
-    const ev: ShelfEvent = { timestamp: now, type: "flag_appeared", flag: f.flag, level: f.level, message: f.message };
-    insertEvent(db, ev, snapId);
-    console.log(`[${now}] APPEARED ${f.flag} (${f.level}) — ${f.message}`);
-  }
-  for (const f of cleared) {
-    const ev: ShelfEvent = {
-      timestamp: now,
-      type: "flag_cleared",
-      flag: f.flag,
-      level: f.level,
-      resolution_hint: resolutionHint(f, vitals),
-    };
-    insertEvent(db, ev, snapId);
-    console.log(`[${now}] CLEARED ${f.flag} — ${ev.resolution_hint}`);
-  }
+  for (const f of appeared) console.log(`[${now}] APPEARED ${f.flag} (${f.level}) — ${f.message}`);
+  for (const f of cleared) console.log(`[${now}] CLEARED ${f.flag} — ${resolutionHint(f, vitals)}`);
 
   const summary = flags.length ? flags.map((f) => f.flag).join(", ") : "clean";
   console.log(`[${now}] snap #${snapId} — ${severity.critical}c/${severity.warn}w/${severity.info}i — ${summary}`);
@@ -130,6 +149,16 @@ console.log(`  HA: ${HA_URL}`);
 console.log(`  poll: ${POLL_MS / 1000}s`);
 console.log(`  entities: ${SHELF_ENTITIES.length}`);
 console.log(`  db: ${process.env.SHELF_EVENTS_DB ?? "./data/shelf-events.db"}`);
+// A throw in one poll is logged and the next poll tries again; left
+// unhandled, it would exit the logger.
+async function pollSafely(db: ReturnType<typeof openDb>): Promise<void> {
+  try {
+    await poll(db);
+  } catch (e) {
+    console.error(`[${new Date().toISOString()}] poll failed:`, e);
+  }
+}
+
 const db = openDb();
-await poll(db);
-setInterval(() => poll(db), POLL_MS);
+await pollSafely(db);
+setInterval(() => pollSafely(db), POLL_MS);

@@ -51,7 +51,16 @@ interface LiveState {
 let liveState: LiveState | null = null;
 let lastPollOk = 0;
 
-async function fetchEntity(id: string): Promise<any> {
+// A login page in front of HA would turn every entity of every poll into a
+// warning, so count them per poll and log only when the count changes.
+let notJsonLast = 0;
+function noteNotJson(n: number): void {
+  if (n === notJsonLast) return;
+  notJsonLast = n;
+  console.warn(`${n} of ${SHELF_ENTITIES.length} HA replies were not JSON (logged when this changes)`);
+}
+
+async function fetchEntity(id: string, tally: { notJson: number }): Promise<any> {
   if (!HA_TOKEN) return null;
   try {
     const res = await fetch(`${HA_URL}/api/states/${id}`, {
@@ -59,8 +68,11 @@ async function fetchEntity(id: string): Promise<any> {
       signal: AbortSignal.timeout(5000),
     });
     if (!res.ok) return null;
-    return res.json();
-  } catch {
+    // Awaited so a 200 that isn't JSON (a login or proxy page in front of HA)
+    // rejects inside this try instead of past it.
+    return await res.json();
+  } catch (e) {
+    if (e instanceof SyntaxError) tally.notJson++;
     return null;
   }
 }
@@ -69,7 +81,9 @@ async function pollHA(): Promise<void> {
   const now = new Date().toISOString();
   const entities: EntityStates = {};
 
-  const results = await Promise.all(SHELF_ENTITIES.map((id) => fetchEntity(id)));
+  const tally = { notJson: 0 };
+  const results = await Promise.all(SHELF_ENTITIES.map((id) => fetchEntity(id, tally)));
+  noteNotJson(tally.notJson);
   for (let i = 0; i < SHELF_ENTITIES.length; i++) {
     if (results[i]) entities[SHELF_ENTITIES[i]] = results[i];
   }
@@ -193,8 +207,18 @@ function cacheFor(ext: string): string {
   return "public, max-age=300";
 }
 
+const badRequest = () =>
+  new Response("Bad request", { status: 400, headers: { "content-type": "text/plain; charset=utf-8" } });
+
 function serveStatic(pathname: string): Response | null {
-  let p = decodeURIComponent(pathname);
+  let p: string;
+  try {
+    p = decodeURIComponent(pathname);
+  } catch {
+    // A malformed %-escape (e.g. /%E0%A4%A) is the client's mistake: 400, and
+    // it goes back through route() so withSecurity still adds the headers.
+    return badRequest();
+  }
   if (p === "/" || p === "") p = "/index.html";
   const safe = normalize(join(PUBLIC_DIR, p));
   if (!safe.startsWith(PUBLIC_DIR)) return new Response("Forbidden", { status: 403 });
@@ -297,9 +321,17 @@ const SITEMAP_XML = `<?xml version="1.0" encoding="UTF-8"?>
 const server = Bun.serve({
   port: PORT,
   async fetch(req) {
-    const url = new URL(req.url);
-    const path = url.pathname;
-    const res = await route(url, path);
+    let res: Response;
+    try {
+      // req.url doesn't parse when the Host header is malformed or missing
+      // (Host: a b, HTTP/1.0 with no Host): the client's mistake, so 400.
+      const url = URL.parse(req.url);
+      res = url ? await route(url, url.pathname) : badRequest();
+    } catch (e) {
+      // Without this, a throw skips withSecurity and Bun's bare 500 goes out.
+      console.error(`${req.method} ${req.url} failed:`, e);
+      res = new Response("Internal error", { status: 500, headers: { "content-type": "text/plain; charset=utf-8" } });
+    }
     return withSecurity(res);
   },
 });
@@ -390,9 +422,19 @@ console.log(`  HA: ${HA_URL}`);
 console.log(`  shelf events DB: ${SHELF_EVENTS_DB} (${existsSync(SHELF_EVENTS_DB) ? "found" : "missing"})`);
 console.log(`  poll interval: ${POLL_INTERVAL_MS / 1000}s`);
 
+// The poll runs unawaited on a timer, so catch here: an unhandled rejection
+// would exit the process and take the site down with it. A failed poll marks
+// the last reading stale, the same as when HA is down.
+function pollSafely(): void {
+  pollHA().catch((e) => {
+    if (liveState) liveState.mode = "stale";
+    console.error("HA poll failed:", e);
+  });
+}
+
 if (HA_TOKEN) {
-  pollHA();
-  setInterval(pollHA, POLL_INTERVAL_MS);
+  pollSafely();
+  setInterval(pollSafely, POLL_INTERVAL_MS);
 } else {
   console.warn("HA_TOKEN missing — live state disabled");
 }

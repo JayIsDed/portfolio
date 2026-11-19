@@ -42,6 +42,9 @@ bun run server.ts
 The snapshot DB is optional — without it the live view still works,
 just no timeline scrub.
 
+`bun test` runs the server and logger against a fake Home Assistant on
+localhost. It needs no `.env` and makes no outside calls.
+
 ## Stack
 
 Bun · TypeScript · `bun:sqlite` · plain SVG + Canvas2D · Docker ·
